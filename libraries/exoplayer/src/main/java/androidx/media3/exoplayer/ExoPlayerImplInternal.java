@@ -910,6 +910,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
   private void startRenderers() throws ExoPlaybackException {
     isRebuffering = false;
     mediaClock.start();
+    Log.d("zhouwh#pts","startRenderers mediaClock start()");
     for (Renderer renderer : renderers) {
       if (isRendererEnabled(renderer)) {
         renderer.start();
@@ -919,6 +920,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
   private void stopRenderers() throws ExoPlaybackException {
     mediaClock.stop();
+    Log.d("zhouwh#pts","stopRenderers : mediaClock stop");
     for (Renderer renderer : renderers) {
       if (isRendererEnabled(renderer)) {
         ensureStopped(renderer);
@@ -956,9 +958,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
                 Player.DISCONTINUITY_REASON_INTERNAL);
       }
     } else {
+      long before = rendererPositionUs;
       rendererPositionUs =
           mediaClock.syncAndGetPositionUs(
               /* isReadingAhead= */ playingPeriodHolder != queue.getReadingPeriod());
+      Log.d("zhouwh#pts", String.format("rendererPositionUs update syncAndGetPositionUs : %d -> %d (%+d)", before, rendererPositionUs,(rendererPositionUs-before)));
       long periodPositionUs = playingPeriodHolder.toPeriodTime(rendererPositionUs);
       maybeTriggerPendingMessages(playbackInfo.positionUs, periodPositionUs);
       playbackInfo.updatePositionUs(periodPositionUs);
@@ -1007,6 +1011,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
   }
 
   private void doSomeWork() throws ExoPlaybackException, IOException {
+    // 被不断调用,自身也会 10ms间隔调用一次
     long operationStartTimeMs = clock.uptimeMillis();
     // Remove other pending DO_SOME_WORK requests that are handled by this invocation.
     handler.removeMessages(MSG_DO_SOME_WORK);
@@ -1028,7 +1033,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
     TraceUtil.beginSection("doSomeWork");
 
+    long beforePos = rendererPositionUs;
     updatePlaybackPositions();
+    Log.d("zhouwh" + TAG, String.format("updatePos : %d -> %d ", beforePos, rendererPositionUs));
 
     boolean renderersEnded = true;
     boolean renderersAllowPlayback = true;
@@ -1044,6 +1051,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
         // TODO: Each renderer should return the maximum delay before which it wishes to be called
         // again. The minimum of these values should then be used as the delay before the next
         // invocation of this method.
+        // 应该是核心的渲染方法，给各个渲染器传入渲染时间和机器时间
+        Log.d("zhouwh" + TAG,
+            String.format("renderers[%d] = %s , render(%d,%d)", i, renderer, rendererPositionUs,
+                rendererPositionElapsedRealtimeUs));
         renderer.render(rendererPositionUs, rendererPositionElapsedRealtimeUs);
         renderersEnded = renderersEnded && renderer.isEnded();
         // Determine whether the renderer allows playback to continue. Playback can continue if the
@@ -1366,10 +1377,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
   private void resetRendererPosition(long periodPositionUs) throws ExoPlaybackException {
     MediaPeriodHolder playingMediaPeriod = queue.getPlayingPeriod();
+    long before = rendererPositionUs;
     rendererPositionUs =
         playingMediaPeriod == null
             ? MediaPeriodQueue.INITIAL_RENDERER_POSITION_OFFSET_US + periodPositionUs
             : playingMediaPeriod.toRendererTime(periodPositionUs);
+    Log.d("zhouwh#pts", String.format("rendererPositionUs update resetRendererPosition : %d -> %d", before, rendererPositionUs));
     mediaClock.resetPosition(rendererPositionUs);
     for (Renderer renderer : renderers) {
       if (isRendererEnabled(renderer)) {
@@ -1447,7 +1460,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
     pendingRecoverableRendererError = null;
     isRebuffering = false;
     mediaClock.stop();
+    Log.d("zhouwh#pts","resetInternal : mediaClock stop");
+    long before = rendererPositionUs;
     rendererPositionUs = MediaPeriodQueue.INITIAL_RENDERER_POSITION_OFFSET_US;
+    Log.d("zhouwh#pts", String.format("rendererPositionUs update resetInternal : %d -> %d", before, rendererPositionUs));
     for (Renderer renderer : renderers) {
       try {
         disableRenderer(renderer);

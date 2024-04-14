@@ -813,8 +813,10 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
       } else if (codec != null) {
         long renderStartTimeMs = SystemClock.elapsedRealtime();
         TraceUtil.beginSection("drainAndFeed");
+        // 先消费,当然一开始是解不出buffer的
         while (drainOutputBuffer(positionUs, elapsedRealtimeUs)
             && shouldContinueRendering(renderStartTimeMs)) {}
+        // 后生产
         while (feedInputBuffer() && shouldContinueRendering(renderStartTimeMs)) {}
         TraceUtil.endSection();
       } else {
@@ -1862,12 +1864,14 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
           return false;
         }
       } else {
+        // 取出一个输出缓冲区
         outputIndex = codec.dequeueOutputBufferIndex(outputBufferInfo);
       }
 
       if (outputIndex < 0) {
         if (outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED /* (-2) */) {
           processOutputMediaFormatChanged();
+          // -2处理完，可以继续解码,等待下次调用
           return true;
         }
         // MediaCodec.INFO_TRY_AGAIN_LATER (-1) or unknown negative return value.
@@ -1896,6 +1900,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
       // The dequeued buffer is a media buffer. Do some initial setup.
       // It will be processed by calling processOutputBuffer (possibly multiple times).
       if (outputBuffer != null) {
+        // 需要处理bufferinfo的信息，不处理可能导致问题
         outputBuffer.position(outputBufferInfo.offset);
         outputBuffer.limit(outputBufferInfo.offset + outputBufferInfo.size);
       }
@@ -1903,6 +1908,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
           && outputBufferInfo.presentationTimeUs == 0
           && (outputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0
           && largestQueuedPresentationTimeUs != C.TIME_UNSET) {
+        // pts的兼容处理
         outputBufferInfo.presentationTimeUs = largestQueuedPresentationTimeUs;
       }
       isDecodeOnlyOutputBuffer = isDecodeOnlyBuffer(outputBufferInfo.presentationTimeUs);
@@ -1979,6 +1985,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
     if (codecNeedsMonoChannelCountWorkaround) {
       mediaFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
     }
+    // 更新format
     codecOutputMediaFormat = mediaFormat;
     codecOutputMediaFormatChanged = true;
   }

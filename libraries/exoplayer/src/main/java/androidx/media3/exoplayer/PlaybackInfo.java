@@ -16,6 +16,7 @@
 package androidx.media3.exoplayer;
 
 import android.os.SystemClock;
+import android.util.Log;
 import androidx.annotation.CheckResult;
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
@@ -173,6 +174,7 @@ import java.util.List;
       long positionUs,
       long positionUpdateTimeMs,
       boolean sleepingForOffload) {
+    Log.d("zhouwh#PlaybackInfo", "creat PlaybackInfo timeline = [" + timeline + "], periodId = [" + periodId + "], requestedContentPositionUs = [" + requestedContentPositionUs + "], discontinuityStartPositionUs = [" + discontinuityStartPositionUs + "], playbackState = [" + playbackState + "], playbackError = [" + playbackError + "], isLoading = [" + isLoading + "], trackGroups = [" + trackGroups + "], trackSelectorResult = [" + trackSelectorResult + "], staticMetadata = [" + staticMetadata + "], loadingMediaPeriodId = [" + loadingMediaPeriodId + "], playWhenReady = [" + playWhenReady + "], playbackSuppressionReason = [" + playbackSuppressionReason + "], playbackParameters = [" + playbackParameters + "], bufferedPositionUs = [" + bufferedPositionUs + "], totalBufferedDurationUs = [" + totalBufferedDurationUs + "], positionUs = [" + positionUs + "], positionUpdateTimeMs = [" + positionUpdateTimeMs + "], sleepingForOffload = [" + sleepingForOffload + "]");
     this.timeline = timeline;
     this.periodId = periodId;
     this.requestedContentPositionUs = requestedContentPositionUs;

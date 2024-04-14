@@ -1600,6 +1600,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
   protected void renderOutputBufferV21(
       MediaCodecAdapter codec, int index, long presentationTimeUs, long releaseTimeNs) {
     TraceUtil.beginSection("releaseOutputBuffer");
+    android.util.Log.d(TAG, "renderOutputBufferV21 codec.cap = "+ codec.getOutputBuffer(index).capacity());
     codec.releaseOutputBuffer(index, releaseTimeNs);
     TraceUtil.endSection();
     decoderCounters.renderedOutputBufferCount++;

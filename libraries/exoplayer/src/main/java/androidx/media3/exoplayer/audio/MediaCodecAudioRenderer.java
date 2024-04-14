@@ -709,6 +709,7 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
 
     boolean fullyConsumed;
     try {
+      // 送Audiotrack
       fullyConsumed = audioSink.handleBuffer(buffer, bufferPresentationTimeUs, sampleCount);
     } catch (InitializationException e) {
       throw createRendererException(

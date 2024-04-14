@@ -872,6 +872,7 @@ public final class DefaultAudioSink implements AudioSink {
 
     if (!isAudioTrackInitialized()) {
       try {
+        // 初始化AudioTrack.
         if (!initializeAudioTrack()) {
           // Not yet ready for initialization of a new AudioTrack.
           return false;
@@ -905,6 +906,7 @@ public final class DefaultAudioSink implements AudioSink {
       return false;
     }
 
+    // inputBuffer 已消费完是null
     if (inputBuffer == null) {
       // We are seeing this buffer for the first time.
       Assertions.checkArgument(buffer.order() == ByteOrder.LITTLE_ENDIAN);
@@ -975,9 +977,11 @@ public final class DefaultAudioSink implements AudioSink {
       inputBufferAccessUnitCount = encodedAccessUnitCount;
     }
 
+    // 消费数据
     processBuffers(presentationTimeUs);
 
     if (!inputBuffer.hasRemaining()) {
+      // 全部消费完，置空，否则会留待下次消费
       inputBuffer = null;
       inputBufferAccessUnitCount = 0;
       return true;
@@ -1060,6 +1064,7 @@ public final class DefaultAudioSink implements AudioSink {
     while (!audioProcessingPipeline.isEnded()) {
       ByteBuffer bufferToWrite;
       while ((bufferToWrite = audioProcessingPipeline.getOutput()).hasRemaining()) {
+        // 写入buffer到Audio track
         writeBuffer(bufferToWrite, avSyncPresentationTimeUs);
         if (bufferToWrite.hasRemaining()) {
           // writeBuffer method is providing back pressure.
@@ -1808,6 +1813,7 @@ public final class DefaultAudioSink implements AudioSink {
         return 0;
       }
     }
+    // 写入Audio track 数据
     int result = writeNonBlockingV21(audioTrack, buffer, size);
     if (result < 0) {
       bytesUntilNextAvSync = 0;
